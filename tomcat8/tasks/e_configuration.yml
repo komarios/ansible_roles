@@ -1,0 +1,9 @@
+---
+- name: Create catalina.properties
+  template: src=catalina.properties dest=/opt/tomcat/conf/catalina.properties owner=tomcat group=tomcat mode=0600
+  
+- name: Create server.xml
+  template: src=tomcat-server.xml dest=/opt/tomcat/conf/server.xml owner=tomcat group=tomcat mode=0600
+  
+- name: Create tomcat-users.xml
+  template: src=tomcat-users.xml dest=/opt/tomcat/conf/tomcat-users.xml owner=tomcat group=tomcat mode=0600

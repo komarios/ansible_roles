@@ -1,0 +1,9 @@
+---
+- name: Download Hikari-CP jar
+  get_url: url=http://central.maven.org/maven2/com/zaxxer/HikariCP/2.6.3/HikariCP-2.6.3.jar dest=/opt/tomcat/lib/HikariCP-2.6.1.jar owner=tomcat group=tomcat mode=0644
+  
+- name: Download mariadb JDBC jar
+  get_url: url=http://central.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/1.6.1/mariadb-java-client-1.6.1.jar dest=/opt/tomcat/lib/mariadb-java-client-1.5.9.jar owner=tomcat group=tomcat mode=0644 
+
+- name: Create context.xml with connection pool
+  template: src=context.xml dest=/opt/tomcat/conf/context.xml owner=tomcat group=tomcat mode=0600

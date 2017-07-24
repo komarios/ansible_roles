@@ -1,0 +1,6 @@
+---
+- name: Add group "tomcat"
+  group: name=tomcat
+
+- name: Add user "tomcat"
+  user: name=tomcat group=tomcat home=/opt/tomcat createhome=no

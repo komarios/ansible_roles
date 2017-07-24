@@ -1,0 +1,9 @@
+---
+- name: Download & Extract archive
+  unarchive: src=http://archive.apache.org/dist/tomcat/tomcat-8/v8.0.44/bin/apache-tomcat-8.0.44.tar.gz dest=/opt/ remote_src=True creates=/opt/apache-tomcat-8.0.44
+
+- name: Symlink CATALINA_HOME directory
+  file: src=/opt/apache-tomcat-8.0.44 path=/opt/tomcat state=link
+
+- name: Change ownership of Tomcat installation
+  file: path=/opt/tomcat/ owner=tomcat group=tomcat state=directory recurse=yes

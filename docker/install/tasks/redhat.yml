@@ -1,0 +1,11 @@
+---
+- name: "Redhat: Install docker"
+  become: true
+  yum: 
+    name: "docker"
+    state: installed
+- name: "Redhat: Install docker-python"
+  become: true
+  yum: 
+    name: "docker-python"
+    state: installed

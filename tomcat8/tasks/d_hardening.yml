@@ -1,0 +1,6 @@
+---
+- name: (Hardening) Delete "docs" application
+  file: path=/opt/tomcat/webapps/docs state=absent
+
+- name: (Hardening) Delete "examples" application
+  file: path=/opt/tomcat/webapps/examples state=absent

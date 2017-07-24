@@ -1,0 +1,9 @@
+---
+- include: debian.yml
+  when: ansible_os_family == 'Debian'
+
+- include: redhat.yml
+  when: ansible_os_family == 'RedHat'
+
+- name: Start docker service
+  service: name=docker state=started

@@ -1,0 +1,18 @@
+---
+- include: 'a_prerequisites.yml'
+- include: 'b_get_archive.yml'
+
+- include: 'c_create_service_scripts_debian.yml'
+  when: ansible_os_family == 'Debian'
+- include: 'c_create_service_scripts_redhat.yml'
+  when: ansible_os_family == 'RedHat'
+
+- include: 'd_hardening.yml'
+- include: 'e_configuration.yml'
+- include: 'f_jdbc_pool.yml'
+
+- name: Start tomcat service
+  service: name=tomcat state=started
+
+- name: wait for tomcat to start
+  wait_for: port=6009

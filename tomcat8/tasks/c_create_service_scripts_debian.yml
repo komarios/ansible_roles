@@ -1,0 +1,6 @@
+---
+- name: Create systemd service file 
+  template: src=tomcat.service.debian dest=/etc/systemd/system/tomcat.service owner=root group=root mode=0644
+
+- name: Create tomcat-clean-restart.sh
+  template: src=tomcat-clean-restart.sh dest=/opt/tomcat/bin/tomcat-clean-restart.sh owner=tomcat group=tomcat mode=0700

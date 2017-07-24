@@ -1,0 +1,30 @@
+---
+- name: "Redhat: Install docker-python [prerequisite]"
+  become: true
+  yum: 
+    name: "docker-python"
+    state: installed
+  when: ansible_os_family == 'RedHat'
+- name: "Debian: Install python-pip [prerequisite]"
+  become: true
+  apt:
+    name: python-pip
+    state: installed
+  when: ansible_os_family == 'Debian'
+- name: "Debian: Install pip:docker-py [prerequisite]"
+  become: true
+  pip:
+    name: docker-py
+  when: ansible_os_family == 'Debian'
+- name: "Download/pull Tomcat8's docker image"
+  docker_image:
+    name: "tomcat:8.0-jre8"
+- name: "Create and Start tomcat8 container"
+  docker_container:
+    name: tomcat8
+    image: "tomcat:8.0-jre8"
+    state: started
+    ports:
+     - "8181:8080"
+- name: "Wait for tomcat to start"
+  wait_for: port=8181 timeout=30

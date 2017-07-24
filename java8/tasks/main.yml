@@ -1,0 +1,17 @@
+---
+- name: Load webupd8team/java Repository
+  apt_repository:
+    repo: 'ppa:webupd8team/java'
+    state: present
+- name: Update apt cache
+  apt: 
+    update_cache: yes
+    cache_valid_time: 3600
+- name: Install java8
+  apt: 
+    name: oracle-java8-installer
+    state: installed
+- name: Set java8 as default java
+  apt: 
+    name: oracle-java8-set-default
+    state: installed

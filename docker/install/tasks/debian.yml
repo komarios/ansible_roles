@@ -1,0 +1,20 @@
+---
+- name: "Debian: Update apt cache"
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+- name: "Debian: Install docker.io"
+  apt:
+    name: docker.io
+    state: installed
+- name: "Debian: Install python-minimal"
+  apt:
+    name: python-minimal
+    state: installed
+- name: "Debian: Install python-pip"
+  apt:
+    name: python-pip
+    state: installed
+- name: "Debian: Install pip:docker-py"
+  pip:
+    name: docker-py

@@ -1,0 +1,51 @@
+---
+- gather_facts: False
+  hosts: hostname
+  vars:
+    ignite_src_dir: /var/opt/ignite/SW_INFO/NetWorker
+    host_temp_dir: /var/tmp/LegatoInstall
+    networker_server: 1.2.3.4
+  tasks:
+################################################################################################################
+    - name: Create installation folder
+      raw: mkdir -p {{ host_temp_dir }}/nmda
+
+    - name: Copy depots to installation folder
+      raw: scp root@ignite:{{ ignite_src_dir }}/*.tar.gz {{ host_temp_dir }}
+
+    - name: Gunzip files
+      raw: cd {{ host_temp_dir }}; /usr/contrib/bin/gunzip *.gz
+
+    - name: Untar NetWorker depot
+      raw: cd {{ host_temp_dir }}; tar -xf nw8*_hpux11_ia64.tar
+
+    - name: Move nmda depot to its respective folder
+      raw: mv {{ host_temp_dir }}/nmda8*_hpux11_ia64.tar {{ host_temp_dir }}/nmda
+
+    - name: Untar nmda depot
+      raw: cd {{ host_temp_dir }}/nmda; tar -xf nmda8*_hpux11_ia64.tar
+
+    - name: Install NetWorker
+      raw: /usr/sbin/swinstall -s {{ host_temp_dir }}/hpux11_ia64/NetWorker.pkg NetWorker.nwr-cbin NetWorker.nwr-man
+
+    - name: Start nsr Service
+      raw: /sbin/init.d/networker start
+
+    - name: Setup nsr Server ports 
+      raw: /opt/networker/bin/nsrports -S 7937-9000
+
+    - name: Setup nsr Client ports 
+      raw: /opt/networker/bin/nsrports -C 10001-30000
+
+    - name: Restart nsr service  
+      raw: /opt/networker/bin/nsr_shutdown; /sbin/init.d/networker start
+
+    - name: Install NMDA
+      raw: /usr/sbin/swinstall -s {{ host_temp_dir }}/nmda/LGTOnmda.pkg NMDA.lgto-nmda
+
+    - name: Test access to NetWroking Server
+      raw: /opt/networker/bin/nsrrpcinfo -p {{ networker_server }}
+
+    - name: Remove Temporary Folder
+      raw: cd /var/tmp; rm -r LegatoInstall
+################################################################################################################

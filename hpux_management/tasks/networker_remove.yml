@@ -1,0 +1,14 @@
+---
+- gather_facts: False
+  hosts: hostname
+  tasks:
+################################################################################################################
+    - name: Shutdown nsr if running
+      raw: /opt/networker/bin/nsr_shutdown
+
+    - name: Remove already installed NetWorker
+      raw: /usr/sbin/swremove NetWorker
+
+    - name: Remove already installed nmda
+      raw: /usr/sbin/swremove NMDA
+################################################################################################################

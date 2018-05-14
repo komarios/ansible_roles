@@ -1,0 +1,33 @@
+---
+- gather_facts: False
+  hosts: hostname1
+  vars:
+    weblogic_admin: wlogic_user
+    weblogic_group: wlogic_dba
+    store_pass: my_pass
+    cert_dir: /weblogic/certificates
+    cert_details:
+      hostname1:
+        dname: "OU=hostname1 OU, O=hostname1 O, L=hostname1 L, ST=hostname1 ST, C=GR"
+
+  tasks:
+    - name: Create certificates folder
+      raw: mkdir -p {{ cert_dir }}
+
+    - name: Change ownership for certificates folder
+      raw: chown -R {{ weblogic_admin }}:{{ weblogic_group }} {{ cert_dir }}
+
+    - name: Create Key and Keystore
+      raw: su - {{ weblogic_admin }} -c '/opt/java8/bin/keytool -genkey -alias {{ inventory_hostname }} -keyalg rsa -keysize 2048 -keystore {{ cert_dir }}/{{ inventory_hostname }}_keystore.jks -storepass {{ store_pass }} -keypass {{ store_pass }} -dname "CN={{ inventory_hostname }}, {{ cert_details[inventory_hostname].dname }}" '
+
+    - name: List created keystore
+      raw: su - {{ weblogic_admin }} -c '/opt/java8/bin/keytool -list -keystore {{ cert_dir }}/{{ inventory_hostname }}_keystore.jks -storepass {{ store_pass }}'
+
+    - name: Create certificate request
+      raw: su - {{ weblogic_admin }} -c '/opt/java8/bin/keytool -certreq -keyalg rsa -alias {{ inventory_hostname }} -storepass {{ store_pass }} -keystore {{ cert_dir }}/{{ inventory_hostname }}_keystore.jks -file {{ cert_dir }}/{{ inventory_hostname }}.csr'
+
+    - name: List created certificate request
+      raw: openssl req -noout -text -in {{ cert_dir }}/{{ inventory_hostname }}.csr
+
+    - name: List all files created
+      raw: ll {{ cert_dir }}

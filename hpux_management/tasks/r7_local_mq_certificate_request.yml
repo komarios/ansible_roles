@@ -1,0 +1,38 @@
+---
+- gather_facts: False
+  hosts: 127.0.0.1
+  vars:
+    my_hosts: [mqserver1]
+    store_pass: my_pass
+    cert_dir: /etc/ansible/certificates
+    cert_details:
+      mqserver1:
+        dname: "OU=hostname1 OU, O=hostname1 O, L=hostname1 L, ST=hostname1 ST, C=GR"
+
+  tasks:
+
+    - name: Create Key and Keystore
+      raw: ssh root@mqdevserver1 'mkdir -p /home/mqm/{{ item }}_mqm_certs ; cd /home/mqm/{{ item }}_mqm_certs ; /opt/mqm/bin/runmqakm -keydb -create -db key.kdb -pw {{ store_pass }} -type cms -expire 720 -stash'
+      with_items: "{{ my_hosts }}"
+
+    - name: Create Certificate Request
+      raw: ssh root@mqdevserver1 'cd /home/mqm/{{ item }}_mqm_certs ; /opt/mqm/bin/runmqakm -certreq -create -db key.kdb -pw {{ store_pass }} -label ibmwebspheremq{{ item }}_qmgr -size 2048 -dn "CN={{ item|upper }}_QMGR, {{ cert_details[item].dname }}" -file {{ item }}_qmgr.csr'
+      with_items: "{{ my_hosts }}"
+
+    - name: List certificate request in keystore
+      raw: ssh root@mqdevserver1 'cd /home/mqm/{{ item }}_mqm_certs ; /opt/mqm/bin/runmqakm -certreq -list -db key.kdb -pw {{ store_pass }}'
+      with_items: "{{ my_hosts }}"
+
+    - name: List certificate with openssl
+      raw: ssh root@mqdevserver1 'cd /home/mqm/{{ item }}_mqm_certs ; openssl req -text -noout -verify -in {{ item }}_qmgr.csr'
+      with_items: "{{ my_hosts }}"
+
+    - name: Fetch certificate request
+      raw: scp -r root@mqdevserver1:/home/mqm/{{ item }}_mqm_certs {{ cert_dir }}
+      with_items: "{{ my_hosts }}"
+
+    - name: List key.kdb file created
+      raw: find {{ cert_dir }} -name key.kdb -exec ls -ltr {} \+
+
+    - name: List all csr files created
+      raw: find {{ cert_dir }} -name *.csr -exec ls -ltr {} \+

@@ -1,0 +1,31 @@
+---
+- gather_facts: False
+  hosts: hostname1
+  vars:
+    weblogic_admin: wlogic_user
+    weblogic_group: wlogic_group
+    store_pass: my_pass
+    cert_dir: /weblogic/certificates
+    cert_details:
+      hostname1:
+        dname: "/OU=hostname1 OU/O=hostname1 O/L=hostname1 O/ST=hostname1 ST/C=GR"
+
+  tasks:
+
+    - name: Create certificates folder
+      raw: mkdir -p {{ cert_dir }}
+
+    - name: Create Key and Keystore
+      raw: openssl genrsa -des3 -passout pass:{{ store_pass }} -out {{ cert_dir }}/{{ inventory_hostname }}.key 2048
+
+    - name: Create certificate request
+      raw: openssl req -new -key {{ cert_dir }}/`hostname`.key -out {{ cert_dir }}/{{ inventory_hostname }}.csr -subj "/CN={{ inventory_hostname }}{{ cert_details[inventory_hostname].dname }}" -passin pass:{{ store_pass }}
+
+    - name: List created certificate request
+      raw: openssl req -noout -text -in {{ cert_dir }}/{{ inventory_hostname }}.csr
+
+    - name: Change ownership for certificates folder
+      raw: chown -R {{ weblogic_admin }}:{{ weblogic_group }} {{ cert_dir }}
+
+    - name: List all files created
+      raw: ll {{ cert_dir }}

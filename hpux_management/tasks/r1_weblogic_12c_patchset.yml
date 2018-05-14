@@ -1,0 +1,28 @@
+---
+- gather_facts: False
+  hosts: hostname1
+    weblogic_admin: wlogic_user
+    weblogic_group: wlogic_group
+    local_patch_dir: /weblogic/wlogic_sw
+    opatch_bin_dir: /weblogic/product/12.2.1.2/OPatch
+    product_dir: /weblogic/product/12.2.1.2
+    ignite_patchset_dir: /weblogic_sw/Patches/SecurityPatch20180116/
+    cur_patch_id: 26860993
+    cur_patch_filename: p26860993_122120_Generic.zip
+    temp_file: /tmp/r1_weblogic_patch.tmp
+
+  tasks:
+    - name: Copy patch to patch folder
+      raw: scp root@ignite:{{ ignite_patchset_dir }}/{{ cur_patch_filename }} {{ local_patch_dir }}/
+
+    - name: Unzip patch
+      raw: "{{ product_dir }}/oracle_common/adr/unzip -q -d {{ local_patch_dir }} {{ local_patch_dir }}/{{ cur_patch_filename }}"
+
+    - name: Change ownership for patch folder
+      raw: chown -R {{ weblogic_admin }}:{{ weblogic_group }} {{ local_patch_dir }}
+
+    - name: Apply patch 
+      raw: su - {{ weblogic_admin }} -c 'cd {{ local_patch_dir }}/{{ cur_patch_id }}; {{ opatch_bin_dir }}/opatch apply -silent > {{ temp_file }}'; cat {{ temp_file }}; rm {{ temp_file }}
+
+    - name: Show patch list
+      raw: su - {{ weblogic_admin }} -c '{{ opatch_bin_dir }}/opatch lspatches > {{ temp_file }}'; cat {{ temp_file }}; rm {{ temp_file }}

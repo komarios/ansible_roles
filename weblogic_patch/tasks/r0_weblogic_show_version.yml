@@ -1,0 +1,17 @@
+---
+- gather_facts: False
+  hosts: server1
+  vars:
+    weblogic_admin: wlogic
+    opatch_dir: /weblogic/product/12.2.1.2/OPatch
+    product_dir: /weblogic/product/12.2.1.2
+    temp_file: /tmp/r0_weblogic_show_version.tmp
+  tasks:
+  - name: Show patched list
+    raw: su - {{ weblogic_admin }} -c '{{ opatch_dir }}/opatch lspatches > {{ temp_file }}'; cat {{ temp_file }}; rm {{ temp_file }}
+
+  - name: Verify the OUI Inventory.
+    raw: su - {{ weblogic_admin }} -c '{{ opatch_dir }}/opatch lsinventory > {{ temp_file }}' >/dev/null 2>&1; cat {{ temp_file }}; rm {{ temp_file }}
+
+  - name: Show WebLogic Version
+    raw: su - {{ weblogic_admin }} -c '. {{ product_dir }}/wlserver/server/bin/setWLSEnv.sh; java weblogic.version -verbose > {{ temp_file }}' >/dev/null 2>&1; cat {{ temp_file }}; rm {{ temp_file }}

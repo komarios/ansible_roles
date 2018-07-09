@@ -1,0 +1,53 @@
+---
+- gather_facts: False
+  hosts: server1
+  vars:
+    weblogic_admin: weblogic
+    weblogic_group: weblogic
+    domain_home_dir: /weblogic/config/my_domain
+    wlogic_soft_dir: /weblogic/tmp
+    wlst_bin_dir: /weblogic/product/12.2.1.2/oracle_common/common/bin
+    weblogic_password: myPass
+    wl_domain_suffix: test
+    temp_file: /tmp/r3_create_startup_shutdown_scripts.tmp
+  tasks:
+  - name: Create AdminServer security folder
+    raw: mkdir -p {{ domain_home_dir }}/servers/AdminServer/security
+
+  - name: Create AdminServer's boot.properties file
+    raw: |
+      echo "username=weblogic
+      password={{ weblogic_password }}" > {{ domain_home_dir }}/servers/AdminServer/security/boot.properties
+
+  - name: Show AdminServer's boot.properties file
+    raw: cat {{ domain_home_dir }}/servers/AdminServer/security/boot.properties
+
+  - name: Backup stopWebLogic.sh file
+    raw: cp {{ domain_home_dir }}/bin/stopWebLogic.sh {{ domain_home_dir }}/bin/stopWebLogic.sh.ORI
+
+  - name: Append force shutdown inside stopWebLogic.sh file
+    raw: cat {{ domain_home_dir }}/bin/stopWebLogic.sh.ORI | sed "s/ignoreSessions='true'/ignoreSessions='true', force='true'/g" > {{ domain_home_dir }}/bin/stopWebLogic.sh
+
+  - name: Show changed line for stopWebLogic.sh file
+    raw: grep ignore {{ domain_home_dir }}/bin/stopWebLogic.sh
+
+  - name: Create StartAdminServer.sh
+    raw: echo "nohup \$DOMAIN_HOME/bin/startWebLogic.sh > \$DOMAIN_HOME/bin/admin.log 2>&1 &" > {{ domain_home_dir }}/bin/StartAdminServer.sh
+
+  - name: Create NodeManagerStart.sh
+    raw: echo "nohup \$DOMAIN_HOME/bin/startNodeManager.sh > \$DOMAIN_HOME/bin/nodemanager.log 2>&1 &" > {{ domain_home_dir }}/bin/NodeManagerStart.sh
+
+  - name: Make scripts executable
+    raw: chmod 750 {{ domain_home_dir }}/bin/*.sh
+
+  - name: Backup nodemanager.properties
+    raw: cp {{ domain_home_dir }}/nodemanager/nodemanager.properties {{ domain_home_dir }}/nodemanager/nod.prop.ORI
+
+  - name: Fix nodemanager.properties
+    raw: cat {{ domain_home_dir }}/nodemanager/nod.prop.ORI|sed 's/QuitEnabled=false/QuitEnabled=true/g'|sed 's/StopScriptEnabled=false/StopScriptEnabled=true/g'|sed "s/Address=localhost/Address=`hostname`/g" > {{ domain_home_dir }}/nodemanager/nodemanager.properties
+
+  - name: Show fixed nodemanager.properties
+    raw: grep -e QuitEnabled -e StopScriptEnabled -e ListenAddress {{ domain_home_dir }}/nodemanager/nodemanager.properties
+
+  - name: Change ownership for weblogic Domain folder
+    raw: chown -R {{ weblogic_admin }}:{{ weblogic_group }} {{ domain_home_dir }}

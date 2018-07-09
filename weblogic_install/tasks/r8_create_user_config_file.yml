@@ -1,0 +1,36 @@
+---
+- gather_facts: False
+  hosts: server1
+  vars:
+    weblogic_admin: weblogic
+    weblogic_group: weblogic
+    infra_home_dir: /weblogic/bin
+    wl_password: 'myPass'
+    wl_admin_url: 't3://server1:9001'
+  tasks:
+  - name: Create infra_home_dir
+    raw: mkdir -p {{ infra_home_dir }}
+
+  - name: Create createUserConfig.SH file
+    raw: |
+      echo "#!/bin/sh
+      cd $DOMAIN_HOME/bin
+      . ./setDomainEnv.sh
+      cd $INFRA_HOME
+      java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST ./createUserConfig.py 2>&1
+      " > {{ infra_home_dir }}/createUserConfig.sh
+
+  - name: Create createUserConfig.PY file
+    raw: |
+      echo "connect( 'weblogic', {{ wl_password }}, {{ wl_admin_url }} )
+      storeUserConfig('/weblogic/bin/WLSTSecureConfigFile', '/weblogic/bin/WLSTSecureKeyFile')
+      disconnect()
+      connect( userConfigFile='/weblogic/bin/WLSTSecureConfigFile', userKeyFile='/weblogic/bin/WLSTSecureKeyFile', url={{ wl_admin_url }} )
+      exit() 
+      " > {{ infra_home_dir }}/createUserConfig.py
+
+  - name: Make scripts executable
+    raw: chmod 750 {{ infra_home_dir }}/*.sh
+
+  - name: Change ownership for infra_home_dir
+    raw: chown -R {{ weblogic_admin }}:{{ weblogic_group }} {{ infra_home_dir }}

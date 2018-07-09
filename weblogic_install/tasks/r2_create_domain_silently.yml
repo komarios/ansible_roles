@@ -1,0 +1,87 @@
+---
+- gather_facts: False
+  hosts: server1
+  vars:
+    weblogic_admin: weblogic
+    weblogic_group: weblogic
+    wlogic_soft_dir: /weblogic/tmp
+    wlst_bin_dir: /weblogic/product/12.2.1.2/oracle_common/common/bin
+    weblogicPassword: myPass
+    wl_domain_suffix: my_test
+    temp_file: /tmp/r2_create_domain_silently.tmp
+  tasks:
+  - name: Initialize create_domain_variables.py
+    raw: |
+      echo "my_base_dir='/weblogic'
+      my_java_home='/opt/java8'
+      my_admin_hostname='{{ inventory_hostname }}'
+      my_admin_port=9001
+      my_NM_port=5556
+      my_passwd='{{ weblogicPassword }}'
+      my_domain='GW_{{ wl_domain_suffix }}_domain'
+      my_managed_hostnames=['server1','server2']
+      my_managed_servers=['{{ wl_domain_suffix }}1','{{ wl_domain_suffix }}2']
+      my_managed_port=9002
+      my_cluster='{{ wl_domain_suffix }}_cluster'" > {{ wlogic_soft_dir }}/create_domain_variables.py
+
+  - name: Show create_domain_variables.py
+    raw: cat {{ wlogic_soft_dir }}/create_domain_variables.py
+
+  - name: Initialize create_domain.py
+    raw: |
+      echo "execfile( '{{ wlogic_soft_dir }}/create_domain_variables.py' )
+      readTemplate(   my_base_dir+'/product/12.2.1.2/wlserver/common/templates/wls/wls.jar' )
+      setOption( 'DomainName',       my_domain)
+      setOption( 'OverwriteDomain', 'true')
+      setOption( 'JavaHome',         my_java_home)
+      setOption( 'ServerStartMode', 'prod')
+      cd('Servers/AdminServer')
+      cmo.setListenAddress( my_admin_hostname )
+      set('ListenPort', my_admin_port)
+      cd('/Security/base_domain/User/weblogic')
+      cmo.setName(      'weblogic' )
+      cmo.setPassword(  my_passwd  )
+      writeDomain( my_base_dir +'/config/'+ my_domain )
+      closeTemplate();
+      readDomain(  my_base_dir +'/config/'+ my_domain )
+      cd( '/SecurityConfiguration/' + my_domain );
+      cmo.setNodeManagerUsername(          'weblogic' )
+      cmo.setNodeManagerPasswordEncrypted(  my_passwd )
+      for i in range(0, len(my_managed_servers)): " > {{ wlogic_soft_dir }}/create_domain.py
+      echo "  cd ( '/') " >> {{ wlogic_soft_dir }}/create_domain.py
+      echo "  create( my_managed_servers[i], 'Server') " >> {{ wlogic_soft_dir }}/create_domain.py
+      echo "  cd ( '/Servers/'+ my_managed_servers[i] ) " >> {{ wlogic_soft_dir }}/create_domain.py
+      echo "  set( 'ListenPort',    my_managed_port) " >> {{ wlogic_soft_dir }}/create_domain.py
+      echo "  set( 'ListenAddress', my_managed_hostnames[i])
+      cd ( '/')
+      create( my_cluster, 'Cluster')
+      for i in range(0, len(my_managed_servers)):" >> {{ wlogic_soft_dir }}/create_domain.py
+      echo "  assign('Server', my_managed_servers[i], 'Cluster', my_cluster)
+      cd ( '/Cluster/'+ my_cluster)
+      set( 'ClusterMessagingMode',  'unicast')
+      set( 'WeblogicPluginEnabled', 'true')
+      for i in range(0, len(my_managed_hostnames)): " >> {{ wlogic_soft_dir }}/create_domain.py
+      echo "  cd ( '/') " >> {{ wlogic_soft_dir }}/create_domain.py
+      echo "  create( my_managed_hostnames[i], 'Machine') " >> {{ wlogic_soft_dir }}/create_domain.py
+      echo "  assign( 'Server', my_managed_servers[i], 'Machine', my_managed_hostnames[i]) " >> {{ wlogic_soft_dir }}/create_domain.py
+      echo "  cd ( 'Machines/' + my_managed_hostnames[i] + '/') " >> {{ wlogic_soft_dir }}/create_domain.py
+      echo "  create( my_managed_hostnames[i], 'NodeManager') " >> {{ wlogic_soft_dir }}/create_domain.py
+      echo "  cd ( 'NodeManager/' + my_managed_hostnames[i]) " >> {{ wlogic_soft_dir }}/create_domain.py
+      echo "  set( 'ListenAddress', my_managed_hostnames[i]) " >> {{ wlogic_soft_dir }}/create_domain.py
+      echo "  set( 'ListenPort',    my_NM_port) " >> {{ wlogic_soft_dir }}/create_domain.py
+      echo "  set( 'DebugEnabled', 'false')
+      updateDomain()
+      closeDomain()
+      exit()" >> {{ wlogic_soft_dir }}/create_domain.py
+
+  - name: Show create_domain.py
+    raw: cat {{ wlogic_soft_dir }}/create_domain.py
+
+  - name: Change ownership for weblogic folder
+    raw: chown -R {{ weblogic_admin }}:{{ weblogic_group }} {{ wlogic_soft_dir }}
+
+  - name: Run WebLogic Create Domain script
+    raw: su - {{ weblogic_admin }} -c '{{ wlst_bin_dir }}/wlst.sh {{ wlogic_soft_dir }}/create_domain.py > {{ temp_file }}'; cat {{ temp_file }}; rm {{ temp_file }}
+
+  - name: Show domain folder
+    raw: ls -l /weblogic/config/GW_{{ wl_domain_suffix }}_domain

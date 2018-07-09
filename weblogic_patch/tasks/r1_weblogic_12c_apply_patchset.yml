@@ -1,0 +1,28 @@
+---
+- gather_facts: False
+  hosts: server1
+  vars:
+    weblogic_admin: weblogic
+    weblogic_group: weblogic
+    remote_server: rserver1
+    remote_patch_dir: /remote_patches_dir/Patches/SecurityPatch20180417
+    local_patch_dir: /weblogic/tmp
+    oracle_home: /weblogic/product/12.2.1.2
+    cur_patch_id: 27338939
+    cur_patch_filename: p27338939_122120_Generic.zip
+    temp_file: /tmp/r1_weblogic_patch.tmp
+  tasks:
+    - name: Copy patch to patch folder
+      raw: scp root@{{ remote_server }}:{{ remote_patch_dir }}/{{ cur_patch_filename }} {{ local_patch_dir }}/
+
+    - name: Unzip patch
+      raw: "{{ oracle_home }}/oracle_common/adr/unzip -q -d {{ local_patch_dir }} {{ local_patch_dir }}/{{ cur_patch_filename }}"
+
+    - name: Change ownership for patch folder
+      raw: chown -R {{ weblogic_admin }}:{{ weblogic_group }} {{ local_patch_dir }}
+
+    - name: Apply patch 
+      raw: su - {{ weblogic_admin }} -c 'export ORACLE_HOME={{ oracle_home }}; cd {{ local_patch_dir }}/{{ cur_patch_id }}; {{ oracle_home }}/OPatch/opatch apply -silent > {{ temp_file }}'; cat {{ temp_file }}; rm {{ temp_file }}
+
+    - name: Show patch list
+      raw: su - {{ weblogic_admin }} -c 'export ORACLE_HOME={{ oracle_home }}; {{ oracle_home }}/OPatch/opatch lspatches > {{ temp_file }}'; cat {{ temp_file }}; rm {{ temp_file }}

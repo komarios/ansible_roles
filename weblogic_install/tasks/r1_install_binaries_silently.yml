@@ -1,0 +1,45 @@
+---
+- gather_facts: False
+  hosts: server1
+  vars:
+    weblogic_admin: weblogic
+    weblogic_group: weblogic
+    wlogic_soft_dir: /weblogic/tmp
+    remote_server: rserver1
+    remmote_weblogic_dir: /remote_folder/weblogic_dir
+    remote_ansible_dir: /remote_folder/ansible_dir
+    weblogic_binary_file: fmw_12.2.1.2.0_infrastructure_Disk1_1of1.zip
+    weblogic_jar_file: fmw_12.2.1.2.0_infrastructure.jar
+    ora_inv_dir: /weblogic/oraInventory
+    java_home_bin: /opt/java8/bin
+    temp_file: /tmp/r1_install_binaries_silently.tmp
+  tasks:
+  - name: Create wlogic SW Dir
+    raw: mkdir -p {{ wlogic_soft_dir }}
+
+  - name: Fetch WebLogic Binaries from remote_server
+    raw: scp root@{{ remote_server }}:{{ remmote_weblogic_dir }}/{{ weblogic_binary_file }} {{ wlogic_soft_dir }}
+
+  - name: UnZip WebLogic Binaries
+    raw: /usr/local/bin/unzip -q -d {{ wlogic_soft_dir }} {{ wlogic_soft_dir }}/{{ weblogic_binary_file }}
+
+  - name: Delete WebLogic Binaries source files
+    raw: rm -f {{ wlogic_soft_dir }}/{{ weblogic_binary_file }} {{ wlogic_soft_dir }}/fmw_12212_readme.htm
+
+  - name: Fetch binaries.rsp from remote_server
+    raw: scp root@{{ remote_server }}:{{ remote_ansible_dir }}/binaries.rsp {{ wlogic_soft_dir }}/
+
+  - name: Create Oracle Inventory Dir
+    raw: mkdir -p {{ ora_inv_dir }}
+
+  - name: Fetch oraInst.loc from remote_server
+    raw: scp root@{{ remote_server }}:{{ remote_ansible_dir }}/oraInst.loc {{ ora_inv_dir }}/
+
+  - name: Change ownership for weblogic folder
+    raw: chown -R {{ weblogic_admin }}:{{ weblogic_group }} /weblogic
+
+  - name: Run WebLogic SILENT installation
+    raw: su - {{ weblogic_admin }} -c '{{ java_home_bin }}/java -d64 -jar {{ wlogic_soft_dir }}/{{ weblogic_jar_file }} -silent -responseFile {{ wlogic_soft_dir }}/binaries.rsp -invPtrLoc {{ ora_inv_dir }}/oraInst.loc > {{ temp_file }}'; cat {{ temp_file }}; rm {{ temp_file }}
+
+  - name: Show WebLogic Installed Version
+    raw: su - {{ weblogic_admin }} -c '. /weblogic/product/12.2.1.2/wlserver/server/bin/setWLSEnv.sh; java weblogic.version'

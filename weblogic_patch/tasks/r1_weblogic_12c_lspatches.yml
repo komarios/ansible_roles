@@ -1,0 +1,11 @@
+---
+- gather_facts: False
+  hosts: server1
+  vars:
+    weblogic_admin: weblogic
+    weblogic_group: weblogic
+    oracle_home: /weblogic/product/12.2.1.2
+    temp_file: /tmp/r1_weblogic_12c_lspatches.tmp
+  tasks:
+    - name: Show patch list
+      raw: su - {{ weblogic_admin }} -c 'export ORACLE_HOME={{ oracle_home }}; {{ oracle_home }}/OPatch/opatch lspatches > {{ temp_file }}'; cat {{ temp_file }}; rm {{ temp_file }}

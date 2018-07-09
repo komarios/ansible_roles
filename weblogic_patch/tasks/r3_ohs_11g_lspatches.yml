@@ -1,0 +1,11 @@
+---
+- gather_facts: False
+  hosts: server1
+  vars:
+    weblogic_admin: weblogic
+    weblogic_group: weblogic
+    opatch_bin_dir: /weblogic/product/oracle_common/OPatch
+    temp_file: /tmp/r3_ohs_11g_lspatches.tmp
+  tasks:
+  - name: Show patch list
+    raw: su - {{ weblogic_admin }} -c '{{ opatch_bin_dir }}/opatch lspatches > {{ temp_file }}'; cat {{ temp_file }}; rm {{ temp_file }}

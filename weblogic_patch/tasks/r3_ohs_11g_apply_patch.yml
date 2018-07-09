@@ -1,0 +1,35 @@
+---
+- gather_facts: False
+  hosts: server1
+  vars:
+    weblogic_admin: weblogic
+    weblogic_group: weblogic
+    remote_server: rserver1
+    remote_patch_dir: /remote_patch_folder/weblogic_sw/Patches/OHSSecurityPatch20180116
+    local_patch_dir: /weblogic/tmp
+    opatch_bin_dir: /weblogic/product/oracle_common/OPatch
+    oracle_home: /weblogic/product/Oracle_WT1
+    cur_patch_id: 27301611
+    cur_patch_filename: p27301611_111190_HPUX-IA64.zip
+    temp_file: /tmp/r3_ohs_11g_patch.tmp
+  tasks:
+  - name: Copy patch file to welogic_sw folder
+    raw: scp root@{{ remote_server }}:{{ remote_patch_dir }}/{{ cur_patch_filename }} {{ local_patch_dir }}/
+
+  - name: Change ownership for patch folder
+    raw: chown -R {{ weblogic_admin }}:{{ weblogic_group }} {{ local_patch_dir }}
+
+  - name: Unzip patch
+    raw: su - {{ weblogic_admin }} -c "{{ oracle_home }}/bin/unzip -q -d {{ local_patch_dir }} {{ local_patch_dir }}/{{ cur_patch_filename }}"
+
+  - name: Shutdown OHS
+    raw: su - {{ weblogic_admin }} -v "opmnctl stopall"
+
+  - name: Apply patch 
+    raw: su - {{ weblogic_admin }} -c 'export ORACLE_HOME={{ oracle_home }}; cd {{ local_patch_dir }}/{{ cur_patch_id }}; {{ opatch_bin_dir }}/opatch apply -silent > {{ temp_file }}'; cat {{ temp_file }}; rm {{ temp_file }}
+
+  - name: Show patch list
+    raw: su - {{ weblogic_admin }} -c 'export ORACLE_HOME={{ oracle_home }}; {{ opatch_bin_dir }}/opatch lspatches > {{ temp_file }}'; cat {{ temp_file }}; rm {{ temp_file }}
+
+  - name: Startup OHS
+    raw: su - {{ weblogic_admin }} -v "opmnctl startall"
